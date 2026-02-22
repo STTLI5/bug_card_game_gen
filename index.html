@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Card Maker</title>
+    <!-- We need this library to take a picture of the card -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            gap: 40px;
+        }
+
+        /* --- SIDEBAR FORM STYLES --- */
+        .sidebar {
+            width: 320px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .sidebar h2 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #475569;
+        }
+
+        .input-group input, .input-group textarea {
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .btn-download {
+            margin-top: 15px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-download:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* --- CARD STYLES --- */
+        /* MTG Ratio: 2.5 x 3.5 -> 375px x 525px */
+        .card {
+            width: 375px;
+            height: 525px;
+            background-color: white;
+            border: 14px solid #1a202c; /* Thick border like MTG cards */
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* Top row with Name and HP */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 2px solid #cbd5e1;
+            background-color: #f8fafc;
+        }
+
+        .name {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .hp {
+            font-size: 22px;
+            font-weight: bold;
+            color: black;
+        }
+
+        /* Sub-header for Bug Type and Evolution */
+        .card-subheader {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 15px;
+            background-color: #cbd5e1;
+            font-size: 12px;
+            font-weight: bold;
+            color: #334155;
+            border-bottom: 2px solid #1a202c;
+        }
+
+        /* Interactive Image Area */
+        .image-container {
+            height: 200px;
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #64748b;
+            border-bottom: 2px solid #1a202c;
+            font-style: italic;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-color 0.2s;
+        }
+
+        .image-container:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Bottom section for stats and attacks */
+        .card-body {
+            padding: 12px 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: flex-start;
+            background-color: #ffffff;
+        }
+
+        .cost-row {
+            font-weight: bold;
+            font-size: 14px;
+            color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+        }
+
+        .leaf-cost {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #000000;
+        }
+
+        .leaf-icon {
+            width: 16px;
+            height: 16px;
+            fill: #dcfce7;
+        }
+
+        .keywords {
+            font-weight: bold;
+            font-style: italic;
+            color: #475569;
+        }
+
+        .ability, .attack {
+            font-size: 13px;
+            line-height: 1.3;
+            color: #1e293b;
+        }
+
+        .attack-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Highlights editable areas when you click them */
+        [contenteditable="true"] {
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        [contenteditable="true"]:hover {
+            background-color: #f1f5f9;
+        }
+
+        [contenteditable="true"]:focus {
+            background-color: #e0f2fe;
+            box-shadow: 0 0 0 2px #38bdf8;
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Left Control Panel -->
+    <div class="sidebar">
+        <h2>Card Editor</h2>
+        
+        <div class="input-group">
+            <label>Card Name</label>
+            <input type="text" id="in-name" value="Ant">
+        </div>
+        
+        <div class="input-group">
+            <label>HP</label>
+            <input type="text" id="in-hp" value="HP 25">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="input-group" style="flex: 1;">
+                <label>Bug Type</label>
+                <input type="text" id="in-type" value="Basic Ant">
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <label>Evolves From</label>
+                <input type="text" id="in-evolves" value="None">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="input-group" style="flex: 1;">
+                <label>Leaf Cost</label>
+                <input type="number" id="in-cost" value="2">
+            </div>
+            <div class="input-group" style="flex: 2;">
+                <label>Keywords</label>
+                <input type="text" id="in-keywords" value="Harvester 3">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Ability Name</label>
+            <input type="text" id="in-ab-name" value="Work together:">
+        </div>
+        <div class="input-group">
+            <label>Ability Effect</label>
+            <textarea id="in-ab-text">Heal 5 damage from one of your Ants.</textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Attack 1 Name</label>
+            <input type="text" id="in-at1-name" value="Bite:">
+        </div>
+        <div class="input-group">
+            <label>Attack 1 Effect</label>
+            <input type="text" id="in-at1-text" value="5 damage.">
+        </div>
+
+        <button class="btn-download" id="downloadBtn">Download Card Image</button>
+        <p style="font-size: 12px; color: #64748b; margin-top: 0; text-align: center;">Downloads at standard MTG size (750x1050px) for printing.</p>
+    </div>
+
+    <!-- The Card Container -->
+    <div class="card" id="bugCard">
+        
+        <!-- Header -->
+        <div class="card-header">
+            <div class="name" id="out-name" contenteditable="true" spellcheck="false">Ant</div>
+            <div class="hp" id="out-hp" contenteditable="true" spellcheck="false">HP 25</div>
+        </div>
+
+        <!-- Subheader -->
+        <div class="card-subheader">
+            <div id="out-type" contenteditable="true" spellcheck="false">Basic Ant</div>
+            <div>Evolves: <span id="out-evolves" contenteditable="true" spellcheck="false">None</span></div>
+        </div>
+
+        <!-- Image Space (Clickable) -->
+        <div class="image-container" id="imageContainer" title="Click to upload an image">
+            <span id="imageText">Click to add image</span>
+            <input type="file" id="imageInput" accept="image/*" class="hidden">
+        </div>
+
+        <!-- Stats and Attacks -->
+        <div class="card-body">
+            <div class="cost-row">
+                <span class="leaf-cost" title="Leaf Cost">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="leaf-icon">
+                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+                        <path d="M2 22c1.25-.97 2.5-2 3.75-3"/>
+                    </svg>
+                    <span id="out-cost" contenteditable="true" spellcheck="false" style="color: #0f172a;">2</span>
+                </span>
+                <span class="keywords" id="out-keywords" contenteditable="true" spellcheck="false">Harvester 3</span>
+            </div>
+            
+            <div class="ability">
+                <span class="attack-name" id="out-ab-name" contenteditable="true" spellcheck="false">Work together:</span> 
+                <span id="out-ab-text" contenteditable="true" spellcheck="false">Heal 5 damage from one of your Ants.</span>
+            </div>
+
+            <div class="attack">
+                <span class="attack-name" id="out-at1-name" contenteditable="true" spellcheck="false">Bite:</span> 
+                <span id="out-at1-text" contenteditable="true" spellcheck="false">5 damage.</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript to handle logic -->
+    <script>
+        // --- IMAGE UPLOAD LOGIC ---
+        const imageContainer = document.getElementById('imageContainer');
+        const imageInput = document.getElementById('imageInput');
+        const imageText = document.getElementById('imageText');
+
+        imageContainer.addEventListener('click', () => { imageInput.click(); });
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageContainer.style.backgroundImage = `url('${e.target.result}')`;
+                    imageText.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- SYNC FORM INPUTS WITH CARD ---
+        function setupSync(inputId, outputId) {
+            const inp = document.getElementById(inputId);
+            const out = document.getElementById(outputId);
+            
+            // When typing in the form, update the card
+            inp.addEventListener('input', () => {
+                out.innerText = inp.value;
+            });
+            
+            // When typing directly on the card, update the form
+            out.addEventListener('input', () => {
+                inp.value = out.innerText;
+            });
+        }
+
+        setupSync('in-name', 'out-name');
+        setupSync('in-hp', 'out-hp');
+        setupSync('in-type', 'out-type');
+        setupSync('in-evolves', 'out-evolves');
+        setupSync('in-cost', 'out-cost');
+        setupSync('in-keywords', 'out-keywords');
+        setupSync('in-ab-name', 'out-ab-name');
+        setupSync('in-ab-text', 'out-ab-text');
+        setupSync('in-at1-name', 'out-at1-name');
+        setupSync('in-at1-text', 'out-at1-text');
+
+        // --- DOWNLOAD AS MTG SIZED IMAGE ---
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const cardElement = document.getElementById('bugCard');
+            const btn = document.getElementById('downloadBtn');
+            
+            // Change button text while processing
+            btn.innerText = "Generating Image...";
+            
+            // Use html2canvas to take a picture of the card
+            // scale: 2 on a 375x525 element makes a perfect 750x1050 image
+            html2canvas(cardElement, {
+                scale: 2, 
+                useCORS: true, // Helps if you upload images
+                backgroundColor: null 
+            }).then(canvas => {
+                // Create a temporary link to trigger the download
+                const link = document.createElement('a');
+                const cardName = document.getElementById('out-name').innerText.trim() || 'bug-card';
+                link.download = cardName.replace(/\s+/g, '-') + '-card.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Reset button text
+                btn.innerText = "Download Card Image";
+            });
+        });
+    </script>
+</body>
+</html>
