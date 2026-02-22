@@ -9,7 +9,9 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #e2e8f0;
+            background-color: #f1f5f9;
+            /* Hexagon/Honeycomb pattern to fit the bug theme */
+            background-image: url("data:image/svg+xml,%3Csvg width='28' height='49' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23cbd5e1' fill-opacity='0.6' fill-rule='evenodd'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.65V49h-2z'/%3E%3C/g%3E%3C/svg%3E");
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -22,10 +24,11 @@
         /* --- SIDEBAR FORM STYLES --- */
         .sidebar {
             width: 320px;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -57,6 +60,8 @@
             border-radius: 6px;
             font-family: inherit;
             font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .input-group textarea {
@@ -66,7 +71,7 @@
 
         .btn-download {
             margin-top: 15px;
-            background-color: #2563eb;
+            background-color: #58A4B0;
             color: white;
             border: none;
             padding: 12px;
@@ -78,7 +83,7 @@
         }
 
         .btn-download:hover {
-            background-color: #1d4ed8;
+            background-color: #373F51;
         }
 
         /* --- CARD STYLES --- */
@@ -223,6 +228,43 @@
         }
         
         .hidden { display: none; }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 800px) {
+            body {
+                flex-direction: column;
+                align-items: center;
+                padding: 20px 15px;
+                gap: 30px;
+            }
+            .sidebar {
+                width: 100%;
+                max-width: 450px;
+                box-sizing: border-box;
+            }
+            .card-wrapper {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+        }
+
+        /* Scale card down on very small screens to fit width */
+        @media (max-width: 420px) {
+            .card {
+                transform: scale(0.85);
+                transform-origin: top center;
+                margin-bottom: -75px; /* Adjust space removed by scale */
+            }
+        }
+
+        @media (max-width: 360px) {
+            .card {
+                transform: scale(0.75);
+                transform-origin: top center;
+                margin-bottom: -130px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -281,18 +323,28 @@
             <input type="text" id="in-at1-text" value="5 damage.">
         </div>
 
+        <div class="input-group">
+            <label>Attack 2 Name</label>
+            <input type="text" id="in-at2-name" value="Attack 2:">
+        </div>
+        <div class="input-group">
+            <label>Attack 2 Effect</label>
+            <input type="text" id="in-at2-text" value="(Type extra attack here or delete)">
+        </div>
+
         <button class="btn-download" id="downloadBtn">Download Card Image</button>
-        <p style="font-size: 12px; color: #64748b; margin-top: 0; text-align: center;">Downloads at standard MTG size (750x1050px) for printing.</p>
+        <p style="font-size: 12px; color: #0c0d0c; margin-top: 0; text-align: center;">Downloads at standard MTG size (750x1050px) for printing.</p>
     </div>
 
-    <!-- The Card Container -->
-    <div class="card" id="bugCard">
-        
-        <!-- Header -->
-        <div class="card-header">
-            <div class="name" id="out-name" contenteditable="true" spellcheck="false">Ant</div>
-            <div class="hp" id="out-hp" contenteditable="true" spellcheck="false">HP 25</div>
-        </div>
+    <!-- The Card Container Wrapper for Mobile Scaling -->
+    <div class="card-wrapper">
+        <div class="card" id="bugCard">
+            
+            <!-- Header -->
+            <div class="card-header">
+                <div class="name" id="out-name" contenteditable="true" spellcheck="false">Ant</div>
+                <div class="hp" id="out-hp" contenteditable="true" spellcheck="false">HP 25</div>
+            </div>
 
         <!-- Subheader -->
         <div class="card-subheader">
@@ -328,8 +380,14 @@
                 <span class="attack-name" id="out-at1-name" contenteditable="true" spellcheck="false">Bite:</span> 
                 <span id="out-at1-text" contenteditable="true" spellcheck="false">5 damage.</span>
             </div>
+            
+            <div class="attack">
+                <span class="attack-name" id="out-at2-name" contenteditable="true" spellcheck="false">Attack 2:</span> 
+                <span id="out-at2-text" contenteditable="true" spellcheck="false">(Type extra attack here or delete)</span>
+            </div>
         </div>
 
+    </div>
     </div>
 
     <!-- JavaScript to handle logic -->
@@ -358,6 +416,8 @@
             const inp = document.getElementById(inputId);
             const out = document.getElementById(outputId);
             
+            if (!inp || !out) return; // Prevent errors if elements are missing
+            
             // When typing in the form, update the card
             inp.addEventListener('input', () => {
                 out.innerText = inp.value;
@@ -379,6 +439,8 @@
         setupSync('in-ab-text', 'out-ab-text');
         setupSync('in-at1-name', 'out-at1-name');
         setupSync('in-at1-text', 'out-at1-text');
+        setupSync('in-at2-name', 'out-at2-name');
+        setupSync('in-at2-text', 'out-at2-text');
 
         // --- DOWNLOAD AS MTG SIZED IMAGE ---
         document.getElementById('downloadBtn').addEventListener('click', () => {
